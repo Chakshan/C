@@ -2,17 +2,11 @@
 #define LINKED_LIST_H
 
 #include <stdbool.h>
-
-typedef struct node_t {
-	void *data;
-	struct node_t *next;
-	struct node_t *prev;
-} node_t; 
-
+#include "node.h"
 
 typedef struct {
-	node_t *head;
-	node_t *tail;
+	dl_node_t *head;
+	dl_node_t *tail;
 	int size;
 } linked_list_t;
 

@@ -1,61 +1,66 @@
-#include "linked_list.h"
+#include "sorted_list.h"
 #include <stdlib.h>
 
 // Initialize empty list
-void init(linked_list_t *list) {
+void init(sorted_list_t *list, int (*comparator)(void *, void *)) {
 	list->head = NULL;
 	list->tail = NULL;
 	list->size = 0;
+	list->comparator = comparator;
 }
 
 // Return pointer to first element
-void *front(linked_list_t *list) {
+void *front(sorted_list_t *list) {
 	return list->head->data;
 }
 
 // Return pointer to last element
-void  *back(linked_list_t *list) {
+void  *back(sorted_list_t *list) {
 	return list->tail->data;
 }
 
-// Add element to the front
-void push_front(linked_list_t *list, void *elem) {
+void insert(sorted_list_t *list, void *elem) {
 	dl_node_t *new_node = (dl_node_t *) malloc(sizeof(dl_node_t));
 	new_node->data = elem;
-	new_node->prev = NULL;
-	
-	if (empty(list)) { // adding first element
+
+	if (empty(list)) {
 		new_node->next = NULL;
-		list->head = new_node;
-		list->tail = new_node;
-	} else {
-		new_node->next = list->head;
-		list->head->prev = new_node;
-		list->head = new_node;
-	}
-	list->size++;
-}
-
-// Add element to the back
-void push_back(linked_list_t *list, void *elem) {
-	dl_node_t *new_node = (dl_node_t *) malloc(sizeof(dl_node_t));
-	new_node->data = elem;
-	new_node->next = NULL;
-
-	if (empty(list)) { // adding first element
 		new_node->prev = NULL;
 		list->head = new_node;
 		list->tail = new_node;
 	} else {
-		list->tail->next = new_node;
-		new_node->prev = list->tail;
-		list->tail = new_node;
+		dl_node_t *curr_node = list->head;
+		while (curr_node && list->comparator(elem, curr_node->data) > 0) {
+			curr_node = curr_node->next;
+		}
+
+		if (curr_node) {
+			// inserted new head
+			if (curr_node == list->head) { 
+				new_node->next = curr_node;
+				curr_node->prev = new_node;
+				new_node->prev = NULL;
+				list->head = new_node;
+			} 
+			// inserted middle element
+			else { 
+				new_node->next = curr_node;
+				new_node->prev = curr_node->prev;
+				curr_node->prev->next = new_node;
+				curr_node->prev = new_node;
+			}
+		} else { // inserting new tail
+			list->tail->next = new_node;
+			new_node->prev = list->tail;
+			new_node->next = NULL;
+			list->tail = new_node;
+		}
 	}
 	list->size++;
 }
 
 // Remove first element
-void pop_front(linked_list_t *list) {
+void pop_front(sorted_list_t *list) {
 	if (empty(list)) return;
 	if (list->size == 1) {
 		free(list->head);
@@ -72,7 +77,7 @@ void pop_front(linked_list_t *list) {
 }
 
 // Remove last element
-void pop_back(linked_list_t *list) {
+void pop_back(sorted_list_t *list) {
 	if (empty(list)) return;
 	if (list->size == 1) {
 		free(list->tail);
@@ -89,12 +94,12 @@ void pop_back(linked_list_t *list) {
 }
 
 // True if empty; false if not
-bool empty(linked_list_t *list) {
+bool empty(sorted_list_t *list) {
 	return (list->size == 0);
 }
 
 // Remove all elements in the list
-void clear(linked_list_t *list) {
+void clear(sorted_list_t *list) {
 	if (empty(list)) return;
 
 	// free all elements
