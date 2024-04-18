@@ -30,6 +30,7 @@ void insert(sorted_list_t *list, void *elem) {
 		list->tail = new_node;
 	} else {
 		dl_node_t *curr_node = list->head;
+		// find node with value equal or greater
 		while (curr_node && list->comparator(elem, curr_node->data) > 0) {
 			curr_node = curr_node->next;
 		}
