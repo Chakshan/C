@@ -1,8 +1,6 @@
 #ifndef _HASHMAP_H_
 #define _HASHMAP_H_
 
-#include <stdbool.h>
-
 typedef struct {
     void *key;
     void *value;
