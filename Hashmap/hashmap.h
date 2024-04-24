@@ -4,14 +4,14 @@
 #include <stdbool.h>
 
 typedef struct {
-	void *key;
-	void *value;
+    void *key;
+    void *value;
 } entry_t;
 
 typedef struct {
-	entry_t *hash_table;
-	int size;
-	int (*hash)(void *);
+    entry_t *hash_table;
+    int size;
+    int (*hash)(void *);
 } hashmap_t;
 
 void init(hashmap_t *map, int min_capacity, int (*hash)(void*));
