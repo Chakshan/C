@@ -13,9 +13,9 @@ typedef struct {
 } hashmap_t;
 
 void init(hashmap_t *map, int min_capacity, int (*hash)(void*));
-void insert(hashmap_t *map, void *key, void *value);
-void *remove(hashmap_t *map, void *key);
 void *get(hashmap_t *map, void *key);
-void clear(hashmap_t *map);
+void put(hashmap_t *map, void *key, void *value);
+void *del(hashmap_t *map, void *key);
+void destroy(hashmap_t *map);
 
-#endif
+#endif // _HASHMAP_H_
