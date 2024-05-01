@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-#define CAPACITY 11
+#define DEFAULT_CAPACITY 11
 
 typedef struct {
     void *key;
@@ -13,13 +13,15 @@ typedef struct {
 
 typedef struct {
     entry_t *hash_table;
+    int capacity;
     int size;
     int (*hash)(void *);
+    int (*comparator)(void *, void *)
 } hashmap_t;
 
-void init(hashmap_t *map, int (*hash)(void*));
+void init(hashmap_t *map, int capacity, int (*hash)(void*));
 void *get(hashmap_t *map, void *key);
-void put(hashmap_t *map, void *key, void *value);
+int put(hashmap_t *map, void *key, void *value);
 void *del(hashmap_t *map, void *key);
 void destroy(hashmap_t *map);
 
