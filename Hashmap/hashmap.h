@@ -16,11 +16,11 @@ typedef struct {
     int capacity;
     int size;
     int (*hash)(void *);
-    int (*comparator)(void *, void *)
+    int (*compare)(void *, void *);
 } hashmap_t;
 
-void init(hashmap_t *map, int capacity, int (*hash)(void*));
-void *get(hashmap_t *map, void *key);
+void init(hashmap_t *map, int capacity, int (*hash)(void*), int (*compare)(void *, void *));
+void *get(const hashmap_t *map, void *key);
 int put(hashmap_t *map, void *key, void *value);
 void *del(hashmap_t *map, void *key);
 void destroy(hashmap_t *map);
