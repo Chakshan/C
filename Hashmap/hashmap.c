@@ -17,11 +17,6 @@ void init(hashmap_t *map, int capacity, int (*hash)(void*), int (*compare)(void 
 	map->size = 0;
 	map->hash = hash;
 	map->compare = compare;
-
-	for (int i = 0; i < capacity; i++) {
-		map->hash_table[i].key = NULL;
-		map->hash_table[i].deleted = false;
-	}
 }
 
 void *get(const hashmap_t *map, void *key) 
@@ -46,6 +41,8 @@ int put(hashmap_t *map, void *key, void *value)
 	int hash = map->hash(key) % map->capacity;
 	int i = hash;
 	entry_t *curr_entry;
+
+	// update entry if key exists
 	do {
 		curr_entry = map->hash_table + i;
 		if (map->compare(curr_entry->key, key) == 0) {
