@@ -69,13 +69,18 @@ void test_get()
 
 	// test get nonexistent
 	assert(tget(2) == 0); // NULL
+	assert(map.size == 4);
 }
 
 void test_put_overwrite()
 {
 	tput(3, 30);
+	assert(map.size == 4);
 	tput(6, 60);
+	assert(map.size == 4);
 	tput(1, 10);
+	assert(map.size == 4);
+
 	assert(tget(3) == 30);
 	assert(tget(6) == 60);
 	assert(tget(1) == 10);
@@ -84,14 +89,20 @@ void test_put_overwrite()
 void test_del()
 {
 	assert(tdel(3) == 3);
+	assert(map.size == 3);
 	assert(tget(3) == 0); // NULL
+
 	assert(tdel(9) == 9);
+	assert(map.size == 2);
 	assert(tget(9) == 0); // NULL
+
 	assert(tdel(1) == 1);
+	assert(map.size == 1);
 	assert(tget(1) == 0); // NULL;
 
 	// test del nonexistent
 	assert(tget(2) == 0); // 
+	assert(map.size == 1);
 }
 
 

@@ -45,7 +45,8 @@ int put(chainmap_t *map, void *key, void *value)
 	hashnode_t *curr_node = map->hash_table[index];
 
 	if (curr_node == NULL) {
-		map->hash_table[index] = new_node; 
+		map->hash_table[index] = new_node;
+		map->size++;
 		return 0;
 	}
 
@@ -60,6 +61,7 @@ int put(chainmap_t *map, void *key, void *value)
 
 	if (map->compare(curr_node->key, key)) {
 		curr_node->next = new_node;
+		map->size++;
 	} else {
 		curr_node->value = value;
 		free(new_node);
@@ -81,6 +83,7 @@ void *del(chainmap_t *map, void *key)
 				map->hash_table[index] = curr_node->next;
 			void *val = curr_node->value;
 			free(curr_node);
+			map->size--;
 			return val;
 		}
 		prev_node = curr_node;
