@@ -13,7 +13,7 @@ typedef struct free_block {
 	struct free_block *prev;
 } free_block_t;
 
-#define DEFAULT_SBRK 2 << 15 // 32KB
+#define DEFAULT_SBRK (2 << 15) // 32KB
 
 #define ID 0xDEADBEEF
 

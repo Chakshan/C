@@ -6,7 +6,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void test_first_malloc();
+void test_basic_allocation();
+void test_zero_allocation();
+void test_multiple_allocation();
+void test_large_allocation();
+void test_free_reallocate();
+void test_memory_overlap();
+
 
 #define RUN_TEST(x) \
 	printf("Running: " #x); \
