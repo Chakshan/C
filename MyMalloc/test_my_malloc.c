@@ -1,4 +1,8 @@
 #include "test_my_malloc.h"
+#include "my_malloc.h"
+
+// #define ABORT_AFTER_FAILURE
+#include "../Test/test.h"
 
 int main()
 {
@@ -12,6 +16,9 @@ int main()
 	RUN_TEST(test_free_already_freed);
 	RUN_TEST(test_free_invalid_ptr);
 }
+
+static void setup() {}
+static void cleanup() {}
 
 void test_valid_memory()
 {
@@ -28,13 +35,13 @@ void test_valid_memory()
 		ptr2[j] = j;
 	}
 
-	assert((((void *)ptr1 + 200) < (void *)ptr2) || (((void *)ptr2 + 100) < (void *)ptr1));
+	ASSERT((((void *)ptr1 + 200) < (void *)ptr2) || (((void *)ptr2 + 100) < (void *)ptr1));
 }
 
 void test_zero_allocation()
 {
 	void *ptr = malloc(0);
-	assert(ptr == NULL);
+	ASSERT(ptr == NULL);
 }
 
 void test_large_allocation()
@@ -66,9 +73,9 @@ void test_smallest_block_used()
 	free(ptr5);
 	
 	int *ptrx = (int *)malloc(3 * sizeof(int));
-	assert(ptrx == ptr3);
+	ASSERT(ptrx == ptr3);
 	int *ptry = (int *)malloc(5 * sizeof(int));
-	assert(ptry == ptr1);
+	ASSERT(ptry == ptr1);
 
 	free(ptr0);
 
@@ -89,7 +96,7 @@ void test_merge_next() {
 	free(ptr1);
 
 	int *ptr = malloc(5 * sizeof(int));
-	assert(ptr == ptr1);
+	ASSERT(ptr == ptr1);
 
 	free(ptr0);
 	free(ptr3);
@@ -106,7 +113,7 @@ void test_merge_prev() {
 	free(ptr2);
 
 	int *ptr = malloc(5 * sizeof(int));
-	assert(ptr == ptr1);
+	ASSERT(ptr == ptr1);
 
 	free(ptr0);
 	free(ptr3);
@@ -125,7 +132,7 @@ void test_merge_both() {
 	free(ptr2);
 
 	int *ptr = malloc(8 * sizeof(int));
-	assert(ptr == ptr1);
+	ASSERT(ptr == ptr1);
 
 	free(ptr0);
 	free(ptr4);
@@ -147,7 +154,7 @@ void test_free_already_freed()
 
 	// should exhibit normal behavior
 	void *ptrx = malloc(16);
-	assert(ptrx == ptr3);
+	ASSERT(ptrx == ptr3);
 
 	free(ptr0);
 	free(ptr4);
@@ -168,7 +175,7 @@ void test_free_invalid_ptr()
 
 	// should exhibit normal behavior
 	void *ptrx = malloc(16);
-	assert(ptrx == ptr3);
+	ASSERT(ptrx == ptr3);
 
 	free(ptr0);
 	free(ptr4);

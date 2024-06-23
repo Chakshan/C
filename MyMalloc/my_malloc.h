@@ -5,18 +5,22 @@
 
 void *malloc(size_t size);
 void free(void *ptr);
-void *calloc(size_t nmenb, size_t size);
+void *calloc(size_t nmemb, size_t size);
 
-typedef struct block {
+typedef struct header {
 	uint32_t id;
 	size_t size;
-	struct block *next;
-	struct block *prev;
-} block_t;
+	struct header *next;
+	struct header *prev;
+} header_t;
 
-static void del(block_t *block);
-static void insert_after(block_t *block, block_t *before_block);
-static void insert_before(block_t *block, block_t *after_block);
+static header_t *find_optimal_block(size_t size);
+static header_t *create_new_block(size_t size);
+static size_t round_to_8(size_t x);
+
+static void del(header_t *block);
+static void insert_after(header_t *block, header_t *before_block);
+static void insert_before(header_t *block, header_t *after_block);
 
 #define DEFAULT_SBRK (2 << 15) // 32KB
 

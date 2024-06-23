@@ -1,10 +1,6 @@
 #ifndef _TEST_MY_MALLOC_H_
 #define _TEST_MY_MALLOC_H_
 
-#include "my_malloc.h"
-#include "assert.h"
-#include <stdio.h>
-#include <stdlib.h>
 
 /*
 Features to test:
@@ -31,10 +27,5 @@ void test_merge_prev();
 void test_merge_both();
 void test_free_already_freed();
 void test_free_invalid_ptr();
-
-#define RUN_TEST(x) \
-	printf("Running: " #x); \
-	x(); \
-	printf("...passed\n")
 
 #endif // _TEST_MY_MALLOC_H_

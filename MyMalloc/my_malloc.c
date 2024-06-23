@@ -1,24 +1,37 @@
 #include "my_malloc.h"
 #include <unistd.h>
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdbool.h>
 
 // head and tail of free list
-static block_t *head;
-static block_t *tail;
+static header_t *head;
+static header_t *tail;
 
-static void log(char* format, ...)
+static bool debug = false;
+static char log_buf[100];
+
+// Constructor for library
+// check if logging enabled and initialize accordingly
+void __attribute__ ((constructor)) __init__(void)
 {
-	char* env_var = getenv(LOG_ENV_VAR);
-	if (env_var && env_var[0] == '1' && env_var[1] == '\0') {
-		va_list args;
-		va_start(args, format);
-		vprintf(format, args);
-		va_end(args);
-		printf("\n");
+	printf("MYMALLOC library is loaded.\n");
+	char *env_var = getenv(LOG_ENV_VAR);
+	if (env_var && strcmp(env_var, "1") == 0) {
+		debug = true;
+		printf("Logging enabled.\n");
 	}
+}
+
+static void log_message(char* format, ...)
+{
+	if (!debug) return;
+	va_list args;
+	va_start(args, format);
+	vsnprintf(log_buf, sizeof(log_buf), format, args);
+	va_end(args);
+	puts(log_buf);
 }
 
 void *malloc(size_t size)
@@ -27,30 +40,10 @@ void *malloc(size_t size)
 		return NULL;
 	}
 
-	// find smallest block that can accomodate the allocation
-	block_t *optimal_block = head;
-	block_t *curr_node = head;	
-	while (curr_node) {
-		if (curr_node->size >= size && (curr_node->size - size) < (optimal_block->size - size)) {
-			optimal_block = curr_node;
-		}
-		curr_node = curr_node->next;
-	}
-
+	header_t *optimal_block = find_optimal_block(size);
 	// if there no free block available, make one with sbrk()
-	if (optimal_block == NULL || optimal_block->size < size) {
-		size_t aligned_size = ((size + sizeof(block_t)) / 8 + 1) * 8; // align to 8 bytes
-		size_t block_size = (DEFAULT_SBRK > aligned_size) ? DEFAULT_SBRK : aligned_size;
-		block_t *new_block = sbrk(block_size);
-		log("Expanding heap by %lu bytes.", block_size);
-
-		if (new_block == (void *)(-1)) { 	// sbrk() failure
-			log("SBRK failure.");
-			return NULL;
-		}
-
-		new_block->id = ID;	
-		new_block->size = block_size - sizeof(block_t);
+	if (optimal_block == NULL) {
+		header_t *new_block = create_new_block(size);
 		
 		if (tail) {
 			insert_after(new_block, tail);
@@ -61,8 +54,6 @@ void *malloc(size_t size)
 			tail = new_block;
 		}
 
-		log("Created free block of size %lu bytes.", new_block->size);
-
 		optimal_block = new_block;
 	}
 
@@ -71,38 +62,87 @@ void *malloc(size_t size)
 	// carve out from optimal block
 
 	// case 1: entire block must be used	
-	if ((optimal_block->size - size) <= sizeof(block_t)) {
+	if ((optimal_block->size - size) <= sizeof(header_t)) {
 		del(optimal_block);
 	} 
 
 	// case 2: partial block is used; insert remainder back into free list 
 	else {
-		block_t *cut_block  = (void *)(optimal_block + 1) + size;
+		header_t *cut_block = (void *)(optimal_block + 1) + size;
 		cut_block->id = ID;
-		cut_block->size = optimal_block->size - size - sizeof(block_t);
+		cut_block->size = optimal_block->size - size - sizeof(header_t);
 		optimal_block->size = size;
 
 		insert_after(cut_block, optimal_block);
 		del(optimal_block);
-
-		log("Free block of size %lu bytes inserted into free list.", cut_block->size);
 	}
 
+	log_message("Allocated block at %p of size %lu bytes", optimal_block, optimal_block->size);
+
 	return ptr;
+}
+
+// Finds the smallest block that can contain the size of the allocation
+// Returns NULL if no such block
+static header_t *find_optimal_block(size_t size)
+{
+	header_t *optimal_block = NULL;
+	header_t *curr_node = head;	
+	while (curr_node) {
+		if (curr_node->size == size) {
+			return curr_node;
+		}
+		if (curr_node->size > size) {
+			if (optimal_block == NULL || curr_node->size < optimal_block->size) {
+				optimal_block = curr_node;
+			}
+		} 
+		curr_node = curr_node->next;
+	}
+
+	return optimal_block;
+}
+
+// Expands heap using sbrk() to create a new block
+// Returns NULL in case of failure
+static header_t *create_new_block(size_t size)
+{
+	size_t aligned_size = round_to_8(size + sizeof(header_t));
+	size_t block_size = (DEFAULT_SBRK > aligned_size) ? DEFAULT_SBRK : aligned_size;
+	header_t *new_block = sbrk(block_size);
+	log_message("Expanding heap by %lu bytes.\n", block_size);
+
+	if (new_block == (void *)(-1)) { 	// sbrk() failure
+		log_message("SBRK failure.");
+		return NULL;
+	}
+
+	new_block->id = ID;	
+	new_block->size = block_size - sizeof(header_t);
+
+	log_message("Created new free block at %p of size %lu bytes.\n", new_block, new_block->size);
+	return new_block;
+}
+
+static size_t round_to_8(size_t x)
+{
+	if (x & 0x7) {
+		return (x / 8 + 1) * 8;
+	}
+	return x; 
 }
 
 
 void free(void *ptr)
 {
-	block_t *block = (void *)(ptr) - sizeof(block_t);
+	header_t *block = (void *)(ptr) - sizeof(header_t);
 
 	// check if block is valid
 	if (block == NULL || block->id != ID) {	
 		return;
 	}
 
-	// insert block into free list in order of
-	// memory address
+	// insert block into free list in order of memory address
 	if (head == NULL) {
 		block->next = NULL;
 		block->prev = NULL;
@@ -115,7 +155,7 @@ void free(void *ptr)
 	} else if (block < head) {
 		insert_before(block, head);
 	} else {
-		block_t *after = head;
+		header_t *after = head;
 		while (after < block) {
 			after = after->next;	
 		}
@@ -126,16 +166,18 @@ void free(void *ptr)
 		insert_before(block, after);
 	}
 
+	log_message("Freed block at %p of size %lu bytes", block, block->size);
+
 	// Merge adjancent blocks if they are also free
 	if (((void *)(block + 1) + block->size) == block->next) {
-		block->size += (sizeof(block_t) + block->next->size);
+		block->size += (sizeof(header_t) + block->next->size);
 		del(block->next);
-		log("Merged with next.");
+		log_message("Merged with next.");
 	}
 	if (block->prev && ((void *)(block - 1) - block->prev->size) == block->prev) {
-		block->prev->size += (sizeof(block_t) + block->size);
+		block->prev->size += (sizeof(header_t) + block->size);
 		del(block);
-		log("Merged with prev.");
+		log_message("Merged with prev.");
 	}
 }
 
@@ -148,14 +190,13 @@ void *calloc(size_t nmemb, size_t size)
 	}
 	
 	memset(ptr, 0, nmemb * size);
-
 	return ptr;
 }
 
-static void del(block_t *block)
+static void del(header_t *block)
 {
 	if (block == NULL) {
-		log("Trying to delete NULL block.");
+		log_message("Trying to delete NULL block.");
 		return;
 	}
 
@@ -172,15 +213,15 @@ static void del(block_t *block)
 	}
 }
 
-static void insert_after(block_t *block, block_t *before_block)
+static void insert_after(header_t *block, header_t *before_block)
 {
 	if (block == NULL || before_block == NULL) {
-		log("Trying to insert NULL or after NULL.");
+		log_message("Trying to insert NULL or after NULL.");
 		return;
 	}
 
 	if (block == before_block) {
-		log("Trying to create self referential node in free list.\n");
+		log_message("Trying to create self referential node in free list.\n");
 		return;
 	}
 
@@ -198,15 +239,15 @@ static void insert_after(block_t *block, block_t *before_block)
 	}
 }
 
-static void insert_before(block_t *block, block_t *after_block)
+static void insert_before(header_t *block, header_t *after_block)
 {
 	if (block == NULL || after_block == NULL) {
-		log("Trying to insert NULL or before NULL");
+		log_message("Trying to insert NULL or before NULL");
 		return;
 	}
 
 	if (block == after_block) {
-		log("Trying to create self referential node in free list.\n");
+		log_message("Trying to create self referential node in free list.\n");
 		return;
 	}
 
