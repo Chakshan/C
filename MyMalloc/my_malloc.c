@@ -135,6 +135,11 @@ static size_t round_to_8(size_t x)
 
 void free(void *ptr)
 {
+	// check if ptr is valid
+	if (ptr < (void *)sizeof(header_t)) {
+		return;
+	}
+
 	header_t *block = (void *)(ptr) - sizeof(header_t);
 
 	// check if block is valid
